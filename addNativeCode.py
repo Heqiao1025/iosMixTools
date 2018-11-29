@@ -24,18 +24,17 @@ target_ios_folder = os.path.join(script_path, "./target_ios")
 backup_ios_folder = os.path.join(script_path, "./backup_ios")
 
 #忽略文件列表，不给这些文件添加垃圾函数
-ignore_file_list = ["main.m", "GNative.mm", "MobClickCpp.mm"]
+ignore_file_list = ["main.m"]
 #忽略文件夹列表，不处理这些文件夹下的文件
-ignore_folder_list = ["thirdparty","Support",".svn","paycenter","UMMobClick.framework","UMessage_Sdk_1.5.0a","TencentOpenApi_IOS_Bundle.bundle",
-                        "TencentOpenAPI.framework","Bugly.framework","AlipaySDK.framework","AlipaySDK.bundle"]
+ignore_folder_list = ["PPGetAddressBook"]
 
 #创建函数数量范围
-create_func_min = 2
-create_func_max = 10
+create_func_min = 20
+create_func_max = 30
             
 #创建垃圾文件数量范围
-create_file_min = 10
-create_file_max = 20
+create_file_min = 40
+create_file_max = 41
             
 #oc代码目录
 ios_src_path = ""
@@ -43,9 +42,37 @@ ios_src_path = ""
 #确保添加的函数不重名
 funcname_set = set()
 
+#随机数方法
+word_name_list = []
+#文件列表
+class_list = []
+#缓存已添加文件列表
+cache_list = []
+
 #单词列表，用以随机名称
 with open(os.path.join(script_path, "./word_list.json"), "r") as fileObj:
-    word_name_list = json.load(fileObj)
+    if len(word_name_list)>=1:
+        pass
+    else: 
+        print "ceshi"
+        num = 0
+        openListTemp = json.load(fileObj)
+        word_name_list = []
+        string = ""
+        count = 0
+        while num<3:
+            if num == 2:
+                word_name_list.append(string)
+                string = ""
+                num = 0
+                count+=1
+                if count == 10000000:
+                    break
+            else:
+                str1 = random.choice(openListTemp)
+                string = "%s" %(string+str1)
+                num+=1
+
 
 #获取一个随机名称
 def getOneName():
@@ -65,6 +92,17 @@ def getOCFuncText(header_text):
         header_text + "\n",
         "{\n",
         "\tNSLog(@\"%s\");\n" %(arg1),
+        "\t[%s new];\n" %(random.choice(class_list)),
+        "\t[%s new];\n" %(random.choice(class_list)),
+        "\t[%s new];\n" %(random.choice(class_list)),
+        "\t[%s new];\n" %(random.choice(class_list)),
+        "\t[%s new];\n" %(random.choice(class_list)),
+        "\t[%s new];\n" %(random.choice(class_list)),
+        "\t[%s new];\n" %(random.choice(class_list)),
+        "\t[%s new];\n" %(random.choice(class_list)),
+        "\t[%s new];\n" %(random.choice(class_list)),
+        "\t[%s new];\n" %(random.choice(class_list)),
+        "\t[%s new];\n" %(random.choice(class_list)),
         "}\n"
     ]
     return "".join(text)
@@ -82,6 +120,18 @@ def appendTextToOCFile(file_path, text):
         new_text = new_text + text + "\n"
         new_text = new_text + old_text[end_mark_index:]
 
+    with open(file_path, "w") as fileObj:
+        fileObj.write(new_text)
+
+def insertImport(file_path, text, class_name):
+    with open(file_path, "r") as fileObj:
+        old_text = fileObj.read()
+        fileObj.close()
+        if class_name in cache_list:
+        	new_text = old_text
+        else :
+        	new_text = '#import "Trash.h"\n'+ old_text
+        	cache_list.append(class_name)
     with open(file_path, "w") as fileObj:
         fileObj.write(new_text)
 
@@ -104,6 +154,7 @@ def dealWithOCFile(filename, file_path):
         appendTextToOCFile(header_path, header_text + ";\n")
         funcText = getOCFuncText(header_text)
         appendTextToOCFile(file_path, funcText)
+        insertImport(file_path, funcText, filename)
 
 #扫描parent_folder，添加垃圾函数，处理了忽略列表
 def addOCFunctions(parent_folder):
@@ -158,9 +209,10 @@ def addOCFile(parent_folder):
     if os.path.exists(target_folder):
         shutil.rmtree(target_folder)
     os.mkdir(target_folder)
-    file_num = random.randint(create_file_min, create_file_max)
+    file_num = 40
     for i in range(file_num):
         file_name = getOneName()
+        class_list.append(file_name)
         file_list.append("#import \"" + file_name + ".h\"")
         print "\t创建OC文件 trash/" + file_name
         header_text = getOCHeaderFileText(file_name)
@@ -170,7 +222,7 @@ def addOCFile(parent_folder):
             fileObj.close()
 
         mm_text = getOCMMFileText(file_name)
-        full_path = os.path.join(target_folder, file_name + ".mm")
+        full_path = os.path.join(target_folder, file_name + ".m")
         with open(full_path, "w") as fileObj:
             fileObj.write(mm_text)
     all_header_text = "\n".join(file_list)
@@ -207,11 +259,11 @@ def main():
     addOCFunctions(target_ios_folder)
 
     if app_args.replace_ios:
-        print "\n用target_ios替换原目录"
-        print "\t备份OC代码到" + os.path.abspath(backup_ios_folder)
-        if os.path.exists(backup_ios_folder):
-            shutil.rmtree(backup_ios_folder)
-        shutil.copytree(ios_src_path, backup_ios_folder)
+        # print "\n用target_ios替换原目录"
+        # print "\t备份OC代码到" + os.path.abspath(backup_ios_folder)
+        # if os.path.exists(backup_ios_folder):
+        #     shutil.rmtree(backup_ios_folder)
+        # shutil.copytree(ios_src_path, backup_ios_folder)
 
         print "\t开始替换"
         trash_folder = os.path.join(ios_src_path, "trash")

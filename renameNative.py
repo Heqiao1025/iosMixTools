@@ -23,13 +23,23 @@ new_prefix = "zzz"
 ios_src_path = ""
 project_file_path = ""
 
-ignore_path_text = [".a", ".png", ".plist", ".storyboard", ".pch"]
+ignore_path_text = [".a", ".png", ".plist", ".storyboard", ".pch", ".bundle", ]
+ignore_text_name = ["InteractiveMessageCell"]#添加忽略文件
 
 #首字母大写
 def isNeedIgnore(file_path):
     global ignore_path_text
     for ignore_text in ignore_path_text:
         if file_path.find(ignore_text) != -1:
+            return True
+    return False
+
+def isNameIgnore(file_path):
+    global ignore_text_name
+    print "start"
+    for ignore_name in ignore_text_name:
+    	print "\t文件名: %s -> %s" %(file_path, file_path.find(ignore_name))
+        if file_path.find(ignore_name) != -1:
             return True
     return False
 
@@ -93,31 +103,22 @@ def addPreFix():
     for parent, folders, files in os.walk(ios_src_path):
         for file in files:
             old_full_path = os.path.join(parent, file)
-            if not isNeedIgnore(old_full_path):
-                new_file_name = add_prefix + file
-                print "\t重命名文件: %s -> %s" %(file, new_file_name)
+            if not isNameIgnore(old_full_path):
+            	if not isNeedIgnore(old_full_path):
+                	new_file_name = add_prefix + file
+              	  # print "\t重命名文件: %s -> %s" %(file, new_file_name)
 
-                new_full_path = os.path.join(parent, new_file_name)
-                os.rename(old_full_path, new_full_path)
+               		new_full_path = os.path.join(parent, new_file_name)
+               		os.rename(old_full_path, new_full_path)
                 #在项目工程中改名
-                renameFileInXcodeProj(file, new_file_name)
+                	renameFileInXcodeProj(file, new_file_name)
 
                 #在可能引用的地方替换
-                old_file_base_name = os.path.splitext(file)[0]
-                new_file_base_name = os.path.splitext(new_file_name)[0]
-                renameInAllFile(old_file_base_name, new_file_base_name)
-                renameInAllFile(add_prefix+add_prefix, add_prefix)
-
-    for parent, folders, files in os.walk(ios_src_path):
-        for folder in folders:
-            old_full_path = os.path.join(parent, folder)
-            if not isNeedIgnore(old_full_path):
-                new_folder_name = add_prefix + folder
-                print "\t重命名文件夹: %s -> %s" %(folder, new_folder_name)
-                new_full_path = os.path.join(parent, new_folder_name)
-                os.rename(old_full_path, new_full_path)
-                #在项目工程中改名
-                renameFileInXcodeProj(folder, new_folder_name)
+                	old_file_base_name = os.path.splitext(file)[0]
+                	new_file_base_name = os.path.splitext(new_file_name)[0]
+                	renameInAllFile(old_file_base_name, new_file_base_name)
+                	renameInAllFile(add_prefix+add_prefix, add_prefix)
+                
     print "finish\n"
 
 
